@@ -22,13 +22,15 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Dependencies
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Global Python Deps
         run: |
           python -m pip install --upgrade pip
           pip install pytest pytest-cov
-          # Install all packages as editable or at least dependencies
-          # Fallback to requirements if any exists, mostly for monorepo testing
-          if [ -f "requirements.txt" ]; then pip install -r requirements.txt; fi
 
       - name: Fetch base branch
         run: git fetch origin ${{ github.base_ref }}
@@ -41,37 +43,54 @@ jobs:
           TARGET_PACK=$(echo "$CHANGED_FILES" | grep '^packages/' | cut -d '/' -f 2 | sort | uniq | head -n 1)
           echo "target=$TARGET_PACK" >> $GITHUB_OUTPUT
 
-      - name: Run Pytest
+      - name: Execute Polyglot Tests
         if: steps.pack.outputs.target != ''
         id: test
         continue-on-error: true # Let it fail but we still calculate score and comment
         run: |
           PACK_DIR="packages/${{ steps.pack.outputs.target }}"
-          echo "Running tests for $PACK_DIR"
-          
-          # Go to pack dir and run test
+          echo "Processing $PACK_DIR"
           cd $PACK_DIR || exit 0
           
-          # If we have a local src we install it
-          if [ -f "pyproject.toml" ]; then pip install -e .; fi
+          TOTAL_PASS=0
+          TOTAL_FAIL=0
           
-          pytest tests/ --junitxml=pytest.xml > pytest_output.txt || true
+          # --- 🟢 PYTHON (Pytest) ---
+          if [ -d "tests" ] && find tests -name "*.py" | grep -q ".py"; then
+            echo "Running Python tests..."
+            if [ -f "pyproject.toml" ]; then pip install -e .; fi
+            pytest tests/ --junitxml=pytest.xml > pytest_output.txt || true
+            PY_PASS=$(grep -oP '\d+(?= passed)' pytest_output.txt | head -n 1 || echo "0")
+            PY_FAIL=$(grep -oP '\d+(?= failed)' pytest_output.txt | head -n 1 || echo "0")
+            TOTAL_PASS=$((TOTAL_PASS + PY_PASS))
+            TOTAL_FAIL=$((TOTAL_FAIL + PY_FAIL))
+          fi
           
-          # Basic gamification point extraction (Count passes/fails from text)
-          PASS_COUNT=$(grep -oP '\d+(?= passed)' pytest_output.txt || echo "0")
-          FAIL_COUNT=$(grep -oP '\d+(?= failed)' pytest_output.txt || echo "0")
+          # --- 🔵 NODE.JS (Jest) ---
+          if [ -f "package.json" ]; then
+            echo "Running Node.js tests..."
+            npm install
+            # Run jest with json output for parsing
+            # We use --json --outputFile so we can parse reliably
+            npx jest --json --outputFile=jest-results.json || true
+            if [ -f "jest-results.json" ]; then
+              JS_PASS=$(jq '.numPassedTests' jest-results.json || echo "0")
+              JS_FAIL=$(jq '.numFailedTests' jest-results.json || echo "0")
+              TOTAL_PASS=$((TOTAL_PASS + JS_PASS))
+              TOTAL_FAIL=$((TOTAL_FAIL + JS_FAIL))
+            fi
+          fi
           
-          # GitHub Outputs
-          echo "passed=$PASS_COUNT" >> $GITHUB_OUTPUT
-          echo "failed=$FAIL_COUNT" >> $GITHUB_OUTPUT
+          # Calculations
+          echo "Final tally: $TOTAL_PASS passed, $TOTAL_FAIL failed"
+          echo "passed=$TOTAL_PASS" >> $GITHUB_OUTPUT
+          echo "failed=$TOTAL_FAIL" >> $GITHUB_OUTPUT
           
-          # Basic score formula (10 per pass, -5 per fail)
-          SCORE=$(( PASS_COUNT * 10 - FAIL_COUNT * 5 ))
+          SCORE=$(( TOTAL_PASS * 10 - TOTAL_FAIL * 5 ))
           if [ $SCORE -lt 0 ]; then SCORE=0; fi
           echo "score=$SCORE" >> $GITHUB_OUTPUT
           
-          # For step success check
-          if [ "$FAIL_COUNT" != "0" ]; then
+          if [ "$TOTAL_FAIL" != "0" ] || ([ "$TOTAL_PASS" = "0" ] && [ "$TOTAL_FAIL" = "0" ]); then
              echo "conclusion=failure" >> $GITHUB_OUTPUT
           else
              echo "conclusion=success" >> $GITHUB_OUTPUT
