@@ -6,6 +6,7 @@ on:
 
 permissions:
   pull-requests: write
+  issues: write
   contents: read
 
 jobs:
@@ -79,7 +80,7 @@ jobs:
           fi
 
       - name: Post PR Score Comment
-        if: steps.pack.outputs.target != ''
+        if: steps.pack.outputs.target != '' && github.event.pull_request.head.repo.fork == false
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
