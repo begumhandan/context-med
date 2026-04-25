@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com) — [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
+## [context-shield-v0.3.0] — 2026-04-25
+
+### Katkıda Bulunan
+- Begum Handan Demir
+
+### İyileştirmeler
+- 📦 context-shield paketi güncellendi.
+- ci(shield): enable test discovery for CI eval and scoring
+
 ## [context-shield-v0.2.0] — 2026-04-25
 
 ### Katkıda Bulunan
