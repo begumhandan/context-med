@@ -82,7 +82,7 @@ jobs:
           fi
 
       - name: Post PR Score Comment
-        if: steps.pack.outputs.target != ''
+        if: always()
         continue-on-error: true
         uses: actions/github-script@v7
         with:
@@ -92,7 +92,7 @@ jobs:
             const failed = parseInt(`${{ steps.test.outputs.failed || 0 }}`, 10);
             const score = parseInt(`${{ steps.test.outputs.score || 0 }}`, 10);
             const conclusion = `${{ steps.test.outputs.conclusion || 'skipped' }}`;
-            const packName = `${{ steps.pack.outputs.target }}`;
+            const packName = `${{ steps.pack.outputs.target || 'paket tespit edilemedi' }}`;
 
             const emoji = conclusion === 'success' ? '✅' : '❌';
             let message = `## Test & Gamification Skor Tablosu 🏆\n\n`;
@@ -111,7 +111,7 @@ jobs:
             }
 
             await github.rest.issues.createComment({
-              issue_number: context.issue.number,
+              issue_number: ${{ github.event.pull_request.number }},
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: message,
