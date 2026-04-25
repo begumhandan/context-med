@@ -91,14 +91,16 @@ jobs:
             # Create the release note block
             NEW_CHANGELOG_ENTRY="## [$NEXT_TAG] — $DATE\n\n### Katkıda Bulunan\n- $CONTRIBUTOR\n\n### İyileştirmeler\n- 📦 $pack paketi güncellendi.\n- $COMMIT_MSG\n"
 
-            # Prepend to CHANGELOG.md right after the header if exists
+            # Safe Update: Write entry to temp file and use 'r' to avoid sed multi-line and encoding issues
+            echo -e "$NEW_CHANGELOG_ENTRY" > entry.tmp
             if grep -q "^## \[Unreleased\]" CHANGELOG.md; then
                # Insert after Unreleased line
-               sed -i "/^## \[Unreleased\]/a \\\\n$NEW_CHANGELOG_ENTRY" CHANGELOG.md
+               sed -i "/^## \[Unreleased\]/r entry.tmp" CHANGELOG.md
             else
                # Append to top if Unreleased section missing
-               echo -e "$NEW_CHANGELOG_ENTRY\n$(cat CHANGELOG.md)" > CHANGELOG.md
+               cat entry.tmp CHANGELOG.md > CHANGELOG.md.new && mv CHANGELOG.md.new CHANGELOG.md
             fi
+            rm entry.tmp
 
             # Tag the commit local
             git tag $NEXT_TAG
