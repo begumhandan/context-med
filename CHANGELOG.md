@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com) — [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
+## [context-shield-v0.2.0] — 2026-04-25
+
+### Katkıda Bulunan
+- Begum Handan Demir
+
+### İyileştirmeler
+- 📦 context-shield paketi güncellendi.
+- fix(workflows): resolve sed multiline error and bump version to 0.2.0
+
+Fixed character encoding and line break issues in auto-versioning script.
+
 
 ## [istabot-nokta-v0.1.0] — 2026-04-25
 
