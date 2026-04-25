@@ -6,7 +6,7 @@ const { scan } = require('../../src/core/scanner');
 const { mask } = require('../../src/core/masker');
 const { demask } = require('../../src/core/demasker');
 
-const FIXTURES_DIR = path.resolve(__dirname, '../../../../fixtures/shield');
+const FIXTURES_DIR = path.resolve(__dirname, '../fixtures');
 
 describe('context-shield | Ratchet Evaluation (Levenshtein Stress Test)', () => {
   const testFiles = [
