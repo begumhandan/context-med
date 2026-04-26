@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "Context-Shield AI",
+  "version": "1.0.0",
+  "description": "Zero-Trust PII Protection for Medical Data",
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "48": "icon.png",
+    "128": "icon.png"
+  },
+  "action": {
+    "default_title": "Context-Shield AI Status"
+  }
+}
