@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com) — [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
+## [context-shield-v0.4.0] — 2026-04-26
+
+### Katkıda Bulunan
+- Begum Handan Demir
+
+### İyileştirmeler
+- 📦 context-shield paketi güncellendi.
+- feat(shield): add standalone chrome extension for real-time masking
+
+Implemented v3 manifest and DOM mutation observer. Extension scoped inside context-shield package to comply with monorepo strict rules.
+
 ## [context-shield-v0.3.0] — 2026-04-25
 
 ### Katkıda Bulunan
