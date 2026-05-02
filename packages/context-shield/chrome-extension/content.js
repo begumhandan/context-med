@@ -1,6 +1,6 @@
 /**
  * Context-Shield AI - Content Script
- * Phase 2 Architecture Port - STRICT MODE + DEBOUNCE + VAULT + ATOMIC DELETE
+ * Phase 2 Architecture Port - STRICT MODE + DEBOUNCE + VAULT + ATOMIC DELETE + DYNAMIC META-PROMPT
  */
 
 // --- 1. PII Scanner Logic ---
@@ -16,6 +16,13 @@ const TOKEN_LABELS = {
     EMAIL: 'EPOSTA',
     PHONE: 'TELEFON',
     PERSON: 'KİŞİ'
+};
+
+const TOKEN_DESCRIPTIONS = {
+    TC: "[TC_X] = Türkiye Cumhuriyeti Kimlik Numarası",
+    EPOSTA: "[EPOSTA_X] = E-posta Adresi",
+    TELEFON: "[TELEFON_X] = İletişim Telefon Numarası",
+    KİŞİ: "[KİŞİ_X] = Kişi veya Hasta Adı"
 };
 
 // Küresel Hafıza (Global State)
@@ -155,7 +162,6 @@ function handleInput(event) {
                 }
             }
 
-            // KİLİT NOKTA: Tek bir yerden hem sayacı hem de tablo verisini (vaultData) gönderiyoruz
             if (modified) {
                 chrome.storage.local.get(['maskedCount'], (result) => {
                     const newCount = (result.maskedCount || 0) + Object.keys(map).length;
@@ -258,7 +264,7 @@ function handleKeyDown(event) {
     }
 }
 
-// --- 4. Caret Position Logic (Güçlendirilmiş Sigortalı Versiyon) ---
+// --- 4. Caret Position Logic ---
 function restoreCaretPosition(el, offset) {
     const selection = window.getSelection();
     const range = document.createRange();
@@ -322,7 +328,7 @@ function attachListeners() {
     elements.forEach(el => {
         if (!el.dataset.shieldActive) {
             el.addEventListener('input', handleInput);
-            el.addEventListener('keydown', handleKeyDown); // Atomik silme dinleyicisi eklendi
+            el.addEventListener('keydown', handleKeyDown);
             el.dataset.shieldActive = "true";
         }
     });
@@ -349,7 +355,7 @@ observer.observe(document.body, {
     characterData: true
 });
 
-// --- 6. Clipboard Interceptor ---
+// --- 6. Clipboard Interceptor (Paste) & Dynamic Meta-Prompt ---
 let isPasteProcessing = false;
 
 function handlePaste(event) {
@@ -367,24 +373,72 @@ function handlePaste(event) {
         event.stopPropagation();
 
         isPasteProcessing = true;
-        const maskedText = mask(pastedText, map);
 
-        const dataTransfer = new DataTransfer();
-        dataTransfer.setData('text/plain', maskedText);
+        // Let kullanıyoruz çünkü metne sonradan ekleme yapacağız
+        let maskedText = mask(pastedText, map);
 
-        const syntheticEvent = new ClipboardEvent('paste', {
-            clipboardData: dataTransfer,
-            bubbles: true,
-            cancelable: true
-        });
+        // --- DİNAMİK META-PROMPT ÜRETİCİ ---
+        const usedTypes = new Set();
+        for (const token of Object.values(map)) {
+            if (token.includes('[TC_')) usedTypes.add('TC');
+            if (token.includes('[EPOSTA_')) usedTypes.add('EPOSTA');
+            if (token.includes('[TELEFON_')) usedTypes.add('TELEFON');
+            if (token.includes('[KİŞİ_')) usedTypes.add('KİŞİ');
+        }
 
-        event.target.dispatchEvent(syntheticEvent);
+        const activeExplanations = Array.from(usedTypes).map(type => TOKEN_DESCRIPTIONS[type]);
+
+        // Sadece kullanılan etiketleri ve uyarıyı metnin sonuna ekle
+        if (activeExplanations.length > 0 && !maskedText.includes("Context-Shield System Note")) {
+            const dynamicPrompt = `\n\n[Context-Shield System Note: Bu metindeki hassas veriler KVKK kapsamında maskelenmiştir. Bağlam tanımları: ${activeExplanations.join(', ')}. Lütfen analizinizi bu bağlamı koruyarak yapın ve cevaplarınızda sadece bu maskelenmiş etiketleri kullanın.]`;
+            maskedText += dynamicPrompt;
+        }
+        // ------------------------------------
+
+        const target = event.target;
+        let isEditable = target.getAttribute('contenteditable') === 'true' || target.isContentEditable;
+
+        // YÖNTEM 1: execCommand (ProseMirror / React gibi modern editörler için en stabil yöntem)
+        let success = false;
+        if (isEditable) {
+            target.focus();
+            success = document.execCommand('insertText', false, maskedText);
+        }
+
+        // YÖNTEM 2: Fallback Mekanizması (Standart <textarea> / <input> veya execCommand desteklemeyen yerler için)
+        if (!success) {
+            if (typeof target.selectionStart === 'number') {
+                const start = target.selectionStart;
+                const end = target.selectionEnd;
+                target.value = target.value.substring(0, start) + maskedText + target.value.substring(end);
+                
+                // İmleci eklenen metnin sonuna taşı
+                target.setSelectionRange(start + maskedText.length, start + maskedText.length);
+            } else if (isEditable) {
+                // execCommand başarısız olursa manuel Range bazlı ekleme
+                const selection = window.getSelection();
+                if (selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    range.deleteContents();
+                    const textNode = document.createTextNode(maskedText);
+                    range.insertNode(textNode);
+                    range.setStartAfter(textNode);
+                    range.collapse(true);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                } else {
+                    target.innerText += maskedText;
+                }
+            }
+        }
+
+        // TETİKLEYİCİ: React / Vue gibi kütüphanelerin eklenen metni (ve Meta-Prompt'u) fark etmesi için Input event fırlat
+        target.dispatchEvent(new Event('input', { bubbles: true }));
 
         setTimeout(() => {
             isPasteProcessing = false;
         }, 100);
 
-        // KİLİT NOKTA: Kopyala-Yapıştır işleminde de tablo verisini (vaultData) gönderiyoruz
         chrome.storage.local.get(['maskedCount'], (result) => {
             const newCount = (result.maskedCount || 0) + Object.keys(map).length;
             chrome.storage.local.set({
@@ -397,4 +451,4 @@ function handlePaste(event) {
 
 window.addEventListener('paste', handlePaste, true);
 attachListeners();
-console.log("🚀 Context-Shield AI Extension Active (Strict Mode w/ Vault & Atomic Delete).");
+console.log("🚀 Context-Shield AI Extension Active (Strict Mode w/ Vault, Atomic Delete & Dynamic Meta-Prompt).");
