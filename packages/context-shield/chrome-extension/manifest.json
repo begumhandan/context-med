@@ -9,16 +9,17 @@
   ],
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"],
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_idle"
     }
   ],
-  "icons": {
-    "48": "icon.png",
-    "128": "icon.png"
-  },
   "action": {
-    "default_title": "Context-Shield AI Status"
+    "default_title": "Context-Shield AI Status",
+    "default_popup": "popup.html"
   }
 }

@@ -1,0 +1,233 @@
+:root {
+    --primary: #003CBD;
+    --primary-light: #EBF2FF;
+    --secondary: #19C480;
+    --bg-soft: #f5f6f9;
+    --on-surface: #18181b;
+    --text-slate: #64748b;
+    --white: #ffffff;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-soft);
+    color: var(--on-surface);
+    width: 320px;
+}
+
+.popup-container {
+    padding: 20px;
+}
+
+/* Header Styles */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.logo-area {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.logo-icon {
+    background-color: var(--primary);
+    color: var(--white);
+    padding: 8px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 60, 189, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo-text h1 {
+    font-size: 14px;
+    font-weight: 900;
+    color: var(--primary);
+    letter-spacing: 0.5px;
+    line-height: 1;
+}
+
+.logo-text p {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-slate);
+    text-transform: uppercase;
+}
+
+.status-badge {
+    background-color: var(--primary-light);
+    color: var(--primary);
+    font-size: 10px;
+    font-weight: 800;
+    padding: 4px 10px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid rgba(0, 60, 189, 0.1);
+}
+
+.status-dot {
+    width: 6px;
+    height: 6px;
+    background-color: var(--primary);
+    border-radius: 50%;
+}
+
+.animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Content Styles */
+.card {
+    background-color: var(--white);
+    border-radius: 20px;
+    padding: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+    margin-bottom: 16px;
+}
+
+.card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-info h3 {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 2px;
+}
+
+.card-info p {
+    font-size: 11px;
+    color: var(--text-slate);
+    line-height: 1.4;
+}
+
+/* Custom Toggle Switch */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #e2e8f0;
+    transition: .4s;
+    border-radius: 24px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+input:checked + .slider {
+    background-color: var(--primary);
+}
+
+input:checked + .slider:before {
+    transform: translateX(20px);
+}
+
+/* Stats Styles */
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.stat-card {
+    background-color: var(--white);
+    padding: 16px;
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.stat-label {
+    font-size: 9px;
+    font-weight: 800;
+    color: var(--text-slate);
+    margin-bottom: 4px;
+    letter-spacing: 0.5px;
+}
+
+.stat-value {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--primary);
+}
+
+/* Footer Styles */
+.footer {
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    margin-top: 24px;
+    padding-top: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--text-slate);
+}
+
+.footer-status {
+    font-size: 9px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.uptime-dot {
+    width: 5px;
+    height: 5px;
+    background-color: var(--secondary);
+    border-radius: 50%;
+}
+
+.copyright {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}

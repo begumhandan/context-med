@@ -8,7 +8,7 @@ const PATTERNS = {
   TC: /\b[1-9](?:\s*\d){10}\b/g,
   EMAIL: /\b[A-Za-z0-9._%+-]+@[\w.-]+\.[A-Za-z]{2,}\b/gi,
   PHONE: /\b(0?5[0-9]{2}[-.\s]??[0-9]{3}[-.\s]??[0-9]{2}[-.\s]??[0-9]{2}|0?5[0-9]{9}|0?2[0-9]{2}[-.\s]??[0-9]{3}[-.\s]??[0-9]{2}[-.\s]??[0-9]{2})\b/g,
-  PERSON: /(?<![a-zçğıöşüA-ZÇĞİÖŞÜ])(?!(?:Hasta|Doğum|Tarih|Klinik|Rapor|Bulgu|Dosya|Yakını|Tanı|İletişim|Adres|Muayene|Laboratuvar|Glikoz|Üre|Kreatinin|Saat|HBG|WBC|PLT|Cihaz|Nem|Hata|Sürüm|Bakım|Teknisyen|Parça|Fiyat|Adet|Toplam|Kimlik|TC|No|Sayın|Doktor|Prof|Dr|Uzm|E-posta|Email|Telefon|Adı|Soyadı|Yedek|Bellek|Kodu|Son|Seri|Yüzde|Oran|Değer|Aralığı|Grade|HER2|SUVmax|LAP|Evre|USG|Patojenik|Modifiye|Radikal|Aksiller|Bölgede|Hipermetabolik|Metastatik|Kemik|Lezyonları|Meme|Dış|Üst|Duktal|Karsinom|İnvaziv|Onkoloji|Konsey|Kararı|Kemoterapi|Protokolü|Planı|Biyopsi|Sonucu|Cerrahi|Epikriz|Sevk|Takip|Notu|Hastanede|Yatan|İcra|Yapıldı)\b)((?:[a-zçğıöşüA-ZÇĞİÖŞÜ]{2,})(?:\s+(?:[a-zçğıöşüA-ZÇĞİÖŞÜ]{2,}))+)(?![a-zçğıöşüA-ZÇĞİÖŞÜ])/giu
+  PERSON: /(?<![a-zçğıöşüA-ZÇĞİÖŞÜ])(?!(?:Hasta|Tahlil|Rapor|Sonuç|Tarih|Bugün|Yarın|Sayın|Dr|Uzm|Prof|Veya|Ve|İle|Onay|Plan|Epikriz|Notu|Takip|Sevk|İcra|Yapıldı)\b)([A-ZÇĞİÖŞÜ][a-zçğıöşü]{1,}\s+[A-ZÇĞİÖŞÜ][a-zçğıöşü]{1,}(?:\s+[A-ZÇĞİÖŞÜ][a-zçğıöşü]{1,})*)(?![a-zçğıöşüA-ZÇĞİÖŞÜ])/gu
 };
 
 const TOKEN_LABELS = {

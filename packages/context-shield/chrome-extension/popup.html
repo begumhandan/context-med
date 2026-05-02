@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Context-Shield AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="popup.css">
+</head>
+
+<body>
+    <div class="popup-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo-area">
+                <div class="logo-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+                        class="shield-icon">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        <path d="m9 12 2 2 4-4"></path>
+                    </svg>
+                </div>
+                <div class="logo-text">
+                    <h1>CONTEXT SHIELD</h1>
+                    <p>AI Protection Layer</p>
+                </div>
+            </div>
+            <div class="status-badge">
+                <span class="status-dot animate-pulse"></span>
+                LIVE
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="card">
+                <div class="card-row">
+                    <div class="card-info">
+                        <h3>Koruma Durumu</h3>
+                        <p>Sayfalardaki PII verilerini anlık maskeler.</p>
+                    </div>
+                    <div class="toggle-container">
+                        <label class="switch">
+                            <input type="checkbox" id="shield-toggle" checked>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-label">MASKELENEN</span>
+                    <span class="stat-value" id="masked-count">0</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">GÜVENLİK</span>
+                    <span class="stat-value">ZERO</span>
+                </div>
+            </div>
+
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-status">
+                <span class="uptime-dot"></span>
+                System Secure
+            </div>
+            <p class="copyright">CONTEXT-SHIELD v2.0</p>
+        </footer>
+    </div>
+    <script src="popup.js"></script>
+</body>
+
+</html>
