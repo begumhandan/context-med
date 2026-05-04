@@ -3,59 +3,95 @@
  * Phase 2 Architecture Port - STRICT MODE + DEBOUNCE + VAULT + ATOMIC DELETE + DYNAMIC META-PROMPT
  */
 
-// --- 1. PII Scanner Logic ---
-const PATTERNS = {
-    TC: /\b[1-9](?:\s*\d){10}\b/g,
-    EMAIL: /\b[A-Za-z0-9._%+-]+@[\w.-]+\.[A-Za-z]{2,}\b/gi,
-    PHONE: /\b(0?5[0-9]{2}[-.\s]??[0-9]{3}[-.\s]??[0-9]{2}[-.\s]??[0-9]{2}|0?5[0-9]{9}|0?2[0-9]{2}[-.\s]??[0-9]{3}[-.\s]??[0-9]{2}[-.\s]??[0-9]{2})\b/g,
-    PERSON: /(?:^|[\s"'(])(?!(?:Hasta|Tahlil|Rapor|Sonuç|Tarih|Bugün|Yarın|Sayın|Dr|Uzm|Prof))([A-ZÇĞİÖŞÜ][a-zçğıöşü]{1,20})\s+([A-ZÇĞİÖŞÜ][a-zçğıöşü]{1,20})(?:\s+([A-ZÇĞİÖŞÜ][a-zçğıöşü]{1,20}))?(?=[\s.,!?;:'")]|$)/g
-};
+// --- 1. Policy Rule Engine (Modüler Maskeleme Kuralları) ---
+const STRIP_LIST = ["Hasta", "Sayın", "Doktor", "Prof", "Dr", "Uzm", "Biyolog", "Hemşire", "Eczacı", "Prof.", "Dr.", "Uzm.", "Yakını", "Onaylayan", "Doktoru", "Yatan", "Ekibi", "Cerrah", "Hekim", "Hekimi", "Hastanede", "Klinik", "Raporu", "Sonucu", "Planı", "Notu", "Tanı", "Muayene"];
+const EXCLUDE_LIST = ["Doğum", "Tarih", "Bulgu", "Dosya", "İletişim", "Adres", "Laboratuvar", "Glikoz", "Üre", "Kreatinin", "Saat", "HBG", "WBC", "PLT", "Cihaz", "Nem", "Hata", "Sürüm", "Bakım", "Teknisyen", "Parça", "Fiyat|Adet", "Toplam", "Kimlik", "TC", "No", "E-posta", "Email", "Telefon", "Adı", "Soyadı", "Yedek", "Bellek", "Kodu", "Son", "Seri", "Yüzde", "Oran", "Değer", "Aralığı", "Grade", "HER2", "SUVmax", "LAP", "Evre", "USG", "Patojenik", "Modifiye", "Radikal", "Aksiller", "Bölgede", "Hipermetabolik", "Metastatik", "Kemik", "Lezyonları", "Meme", "Dış", "Üst", "Duktal", "Karsinom", "İnvaziv", "Onkoloji", "Konsey", "Kararı", "Kemoterapi", "Protokolü", "Epikriz", "Sevk", "Takip", "Radyoterapi", "Genetik", "Bulgular", "Laboratuvarı", "Sorumlusu", "Teknik", "Analiz", "İmza", "Kaşe", "Mühür", "Onaylanacak", "Planlanmıştır", "Bilgilendirildi", "Üzerinden", "Sonraki", "Randevu", "Giriş", "Önizleme", "İcra", "Edildi", "Edilmiştir", "Yapıldı", "Saptanmıştır", "De", "Da", "Ki", "Mi", "Mı", "Mu", "Mü", "Ya", "Yok", "Var", "Ne"];
+
+const maskingPolicies = [
+    {
+        kind: 'TC',
+        pattern: /\b[1-9](?:\s*\d){10}\b/g,
+        action: () => true
+    },
+    {
+        kind: 'EMAIL',
+        // Sentinel Email Rule: Kurum içi emailleri (domainNotIn) maskelemeden atla
+        pattern: /\b[A-Za-z0-9._%+-]+@[\w.-]+\.[A-Za-z]{2,}\b/gi,
+        action: (text) => !text.toLowerCase().includes('@samsun.edu.tr')
+    },
+    {
+        kind: 'PHONE',
+        pattern: /\b(0?5[0-9]{2}[-.\s]??[0-9]{3}[-.\s]??[0-9]{2}[-.\s]??[0-9]{2}|0?5[0-9]{9}|0?2[0-9]{2}[-.\s]??[0-9]{3}[-.\s]??[0-9]{2}[-.\s]??[0-9]{2})\b/g,
+        action: () => true
+    },
+    {
+        kind: 'PERSON',
+        pattern: /(?:^|[\s"'(])(?!(?:Hasta|Tahlil|Rapor|Sonuç|Tarih|Bugün|Yarın|Sayın|Dr|Uzm|Prof))([A-ZÇĞİÖŞÜ][a-zçğıöşü]{1,20})\s+([A-ZÇĞİÖŞÜ][a-zçğıöşü]{1,20})(?:\s+([A-ZÇĞİÖŞÜ][a-zçğıöşü]{1,20}))?(?=[\s.,!?;:'")]|$)/g,
+        extract: (match) => match[0].replace(/^[\s"'(]+/, ''),
+        action: (text) => {
+            const words = text.trim().split(/\s+/);
+            if (words.length < 2) return false;
+
+            const isExcluded = words.some(w => {
+                const cleanWord = w.replace(/[.,!?;:'")]*$/, '').toLowerCase();
+                return EXCLUDE_LIST.some(e => e.toLowerCase() === cleanWord) || STRIP_LIST.some(s => s.toLowerCase() === cleanWord);
+            });
+
+            return !isExcluded;
+        }
+    },
+    {
+        kind: 'IBAN',
+        // \b yerine çok daha güçlü Lookaround (?<!...) mantığı eklendi
+        pattern: /(?<![A-Za-z])TR(?:\s*\d){24}(?!\d)/gi,
+        action: () => true
+    },
+    {
+        kind: 'KART',
+        // Sadece etrafında başka rakam yoksa aralarındaki boşlukları tolere ederek 16 haneyi yakalar
+        pattern: /(?<!\d)(?:\d{4}[-\s]?){3}\d{4}(?!\d)/g,
+        action: () => true
+    }
+];
 
 const TOKEN_LABELS = {
     TC: 'TC',
     EMAIL: 'EPOSTA',
     PHONE: 'TELEFON',
-    PERSON: 'KİŞİ'
+    PERSON: 'KİŞİ',
+    IBAN: 'IBAN',
+    KART: 'KART'
 };
 
 const TOKEN_DESCRIPTIONS = {
     TC: "[TC_X] = Türkiye Cumhuriyeti Kimlik Numarası",
     EPOSTA: "[EPOSTA_X] = E-posta Adresi",
     TELEFON: "[TELEFON_X] = İletişim Telefon Numarası",
-    KİŞİ: "[KİŞİ_X] = Kişi veya Hasta Adı"
+    KİŞİ: "[KİŞİ_X] = Kişi veya Hasta Adı",
+    IBAN: "[IBAN_X] = Banka IBAN Numarası",
+    KART: "[KART_X] = Kredi Kartı Numarası"
 };
 
 // Küresel Hafıza (Global State)
-let globalCounters = { TC: 0, EMAIL: 0, PHONE: 0, PERSON: 0 };
+let globalCounters = { TC: 0, EMAIL: 0, PHONE: 0, PERSON: 0, IBAN: 0, KART: 0 };
 let globalVault = {};
-
-const STRIP_LIST = ["Hasta", "Sayın", "Doktor", "Prof", "Dr", "Uzm", "Biyolog", "Hemşire", "Eczacı", "Prof.", "Dr.", "Uzm.", "Yakını", "Onaylayan", "Doktoru", "Yatan", "Ekibi", "Cerrah", "Hekim", "Hekimi", "Hastanede", "Klinik", "Raporu", "Sonucu", "Planı", "Notu", "Tanı", "Muayene"];
-const EXCLUDE_LIST = ["Doğum", "Tarih", "Bulgu", "Dosya", "İletişim", "Adres", "Laboratuvar", "Glikoz", "Üre", "Kreatinin", "Saat", "HBG", "WBC", "PLT", "Cihaz", "Nem", "Hata", "Sürüm", "Bakım", "Teknisyen", "Parça", "Fiyat|Adet", "Toplam", "Kimlik", "TC", "No", "E-posta", "Email", "Telefon", "Adı", "Soyadı", "Yedek", "Bellek", "Kodu", "Son", "Seri", "Yüzde", "Oran", "Değer", "Aralığı", "Grade", "HER2", "SUVmax", "LAP", "Evre", "USG", "Patojenik", "Modifiye", "Radikal", "Aksiller", "Bölgede", "Hipermetabolik", "Metastatik", "Kemik", "Lezyonları", "Meme", "Dış", "Üst", "Duktal", "Karsinom", "İnvaziv", "Onkoloji", "Konsey", "Kararı", "Kemoterapi", "Protokolü", "Epikriz", "Sevk", "Takip", "Radyoterapi", "Genetik", "Bulgular", "Laboratuvarı", "Sorumlusu", "Teknik", "Analiz", "İmza", "Kaşe", "Mühür", "Onaylanacak", "Planlanmıştır", "Bilgilendirildi", "Üzerinden", "Sonraki", "Randevu", "Giriş", "Önizleme", "İcra", "Edildi", "Edilmiştir", "Yapıldı", "Saptanmıştır", "De", "Da", "Ki", "Mi", "Mı", "Mu", "Mü", "Ya", "Yok", "Var", "Ne"];
 
 function scan(text) {
     const localMap = {};
-    for (const [type, regex] of Object.entries(PATTERNS)) {
+    // Modüler Policy Motoru üzerinden maskeleme iterasyonu
+    for (const policy of maskingPolicies) {
         let match;
-        regex.lastIndex = 0;
-        while ((match = regex.exec(text)) !== null) {
-            let originalValue = match[0];
+        policy.pattern.lastIndex = 0;
+        while ((match = policy.pattern.exec(text)) !== null) {
+            let originalValue = policy.extract ? policy.extract(match) : match[0];
 
-            if (type === 'PERSON') {
-                originalValue = originalValue.replace(/^[\s"'(]+/, '');
-                const words = originalValue.trim().split(/\s+/);
-                if (words.length < 2) continue;
-
-                const isExcluded = words.some(w => {
-                    const cleanWord = w.replace(/[.,!?;:'")]*$/, '').toLowerCase();
-                    return EXCLUDE_LIST.some(e => e.toLowerCase() === cleanWord) || STRIP_LIST.some(s => s.toLowerCase() === cleanWord);
-                });
-
-                if (isExcluded) continue;
+            if (!policy.action(originalValue)) {
+                continue;
             }
 
             if (!globalVault[originalValue]) {
-                globalCounters[type]++;
-                globalVault[originalValue] = `[${TOKEN_LABELS[type]}_${globalCounters[type]}]`;
+                globalCounters[policy.kind]++;
+                globalVault[originalValue] = `[${TOKEN_LABELS[policy.kind]}_${globalCounters[policy.kind]}]`;
             }
             localMap[originalValue] = globalVault[originalValue];
         }
@@ -200,7 +236,8 @@ function handleKeyDown(event) {
 
                 if (event.key === 'Backspace') {
                     const textBefore = text.slice(0, offset);
-                    const match = textBefore.match(/\[(KİŞİ|TC|EPOSTA|TELEFON)_\d+\]$/);
+                    // Güncel Kurallar Dahil Edildi
+                    const match = textBefore.match(/\[(KİŞİ|TC|EPOSTA|TELEFON|IBAN|KART)_\d+\]$/);
 
                     if (match) {
                         event.preventDefault();
@@ -216,7 +253,8 @@ function handleKeyDown(event) {
                     }
                 } else if (event.key === 'Delete') {
                     const textAfter = text.slice(offset);
-                    const match = textAfter.match(/^\[(KİŞİ|TC|EPOSTA|TELEFON)_\d+\]/);
+                    // Güncel Kurallar Dahil Edildi
+                    const match = textAfter.match(/^\[(KİŞİ|TC|EPOSTA|TELEFON|IBAN|KART)_\d+\]/);
 
                     if (match) {
                         event.preventDefault();
@@ -239,7 +277,8 @@ function handleKeyDown(event) {
 
             if (event.key === 'Backspace') {
                 const textBefore = text.slice(0, offset);
-                const match = textBefore.match(/\[(KİŞİ|TC|EPOSTA|TELEFON)_\d+\]$/);
+                // Güncel Kurallar Dahil Edildi
+                const match = textBefore.match(/\[(KİŞİ|TC|EPOSTA|TELEFON|IBAN|KART)_\d+\]$/);
 
                 if (match) {
                     event.preventDefault();
@@ -250,7 +289,8 @@ function handleKeyDown(event) {
                 }
             } else if (event.key === 'Delete') {
                 const textAfter = text.slice(offset);
-                const match = textAfter.match(/^\[(KİŞİ|TC|EPOSTA|TELEFON)_\d+\]/);
+                // Güncel Kurallar Dahil Edildi
+                const match = textAfter.match(/^\[(KİŞİ|TC|EPOSTA|TELEFON|IBAN|KART)_\d+\]/);
 
                 if (match) {
                     event.preventDefault();
@@ -384,6 +424,8 @@ function handlePaste(event) {
             if (token.includes('[EPOSTA_')) usedTypes.add('EPOSTA');
             if (token.includes('[TELEFON_')) usedTypes.add('TELEFON');
             if (token.includes('[KİŞİ_')) usedTypes.add('KİŞİ');
+            if (token.includes('[IBAN_')) usedTypes.add('IBAN');
+            if (token.includes('[KART_')) usedTypes.add('KART');
         }
 
         const activeExplanations = Array.from(usedTypes).map(type => TOKEN_DESCRIPTIONS[type]);
@@ -411,7 +453,7 @@ function handlePaste(event) {
                 const start = target.selectionStart;
                 const end = target.selectionEnd;
                 target.value = target.value.substring(0, start) + maskedText + target.value.substring(end);
-                
+
                 // İmleci eklenen metnin sonuna taşı
                 target.setSelectionRange(start + maskedText.length, start + maskedText.length);
             } else if (isEditable) {
