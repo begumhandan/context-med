@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 Format: [Keep a Changelog](https://keepachangelog.com) — [Semantic Versioning](https://semver.org).
 
 ## [Unreleased]
+## [context-shield-v0.5.0] — 2026-05-02
+
+### Katkıda Bulunan
+- Begum Handan Demir
+
+### İyileştirmeler
+- 📦 context-shield paketi güncellendi.
+- feat: implement Dynamic Meta-Prompt Injection and optimize React-Bypass logic
+
 ## [context-shield-v0.4.0] — 2026-04-26
 
 ### Katkıda Bulunan
